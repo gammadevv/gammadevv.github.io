@@ -53,12 +53,12 @@
                 gap: 12px;
                 width: 100%;
                 max-width: 100%;
-                overflow-x: auto;
             }
             
             .presence .usernamecontainer {
                 flex: 1;
                 min-width: 0;
+                max-width: 280px;
             }
             
             .presence .usernamecontainer h3 {
@@ -70,47 +70,22 @@
                 overflow-x: auto;
                 overflow-y: hidden;
                 scrollbar-width: thin;
+                max-width: 100%;
             }
             
             .guild-tag {
                 white-space: nowrap;
+                flex-shrink: 0;
             }
             
             .presence .activity {
-                position: relative;
-                cursor: help;
+                cursor: pointer;
                 display: inline-block;
                 max-width: 100%;
                 overflow: hidden;
                 white-space: nowrap;
                 text-overflow: ellipsis;
-            }
-            
-            .presence .activity::after {
-                content: attr(data-fulltext);
-                position: absolute;
-                bottom: 100%;
-                left: 0;
-                background: rgba(0,0,0,0.85);
-                color: white;
-                padding: 6px 10px;
-                border-radius: 8px;
-                font-size: 12px;
-                white-space: normal;
-                word-break: break-word;
-                max-width: 280px;
-                z-index: 100;
-                pointer-events: none;
-                opacity: 0;
-                transition: opacity 0.2s;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                backdrop-filter: blur(4px);
-            }
-            
-            .presence .activity:hover::after {
-                opacity: 1;
-            }
-            
+            }                
         </style>
         <link rel="preload" href="bg.jpg" as="image">     
         <script src="rainyday.js"></script>   
@@ -487,6 +462,7 @@
                     : ''} 
                 </div>
                 `;
+                addActivityTooltip();
                 
                 const vid = presence.querySelector(".nameplate-video");
                 if (vid) {
@@ -497,6 +473,51 @@
                 }
             }
 
+            function addActivityTooltip() {
+                const activityElem = document.querySelector('.presence .activity');
+                if (!activityElem) return;
+                
+                const fullText = activityElem.getAttribute('data-fulltext') || activityElem.textContent;
+                if (!fullText) return;
+                
+                activityElem.removeEventListener('mouseenter', showTooltip);
+                activityElem.removeEventListener('mouseleave', hideTooltip);
+                
+                let tooltipDiv = null;
+                
+                function showTooltip(e) {
+                    tooltipDiv = document.createElement('div');
+                    tooltipDiv.className = 'custom-tooltip';
+                    tooltipDiv.textContent = fullText;
+                    document.body.appendChild(tooltipDiv);
+                    
+                    const rect = activityElem.getBoundingClientRect();
+                    tooltipDiv.style.position = 'fixed';
+                    tooltipDiv.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
+                    tooltipDiv.style.left = rect.left + 'px';
+                    tooltipDiv.style.backgroundColor = 'rgba(0,0,0,0.9)';
+                    tooltipDiv.style.color = 'white';
+                    tooltipDiv.style.padding = '6px 10px';
+                    tooltipDiv.style.borderRadius = '8px';
+                    tooltipDiv.style.fontSize = '12px';
+                    tooltipDiv.style.maxWidth = '280px';
+                    tooltipDiv.style.whiteSpace = 'normal';
+                    tooltipDiv.style.wordBreak = 'break-word';
+                    tooltipDiv.style.zIndex = '1000';
+                    tooltipDiv.style.backdropFilter = 'blur(4px)';
+                    tooltipDiv.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+                    tooltipDiv.style.pointerEvents = 'none';
+                }
+                
+                function hideTooltip() {
+                    if (tooltipDiv) tooltipDiv.remove();
+                    tooltipDiv = null;
+                }
+                
+                activityElem.addEventListener('mouseenter', showTooltip);
+                activityElem.addEventListener('mouseleave', hideTooltip);
+            }
+            
             window.addEventListener("DOMContentLoaded", async () => {
                 await updateDiscord();
                 setInterval(updateDiscord, 15000);
