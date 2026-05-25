@@ -45,47 +45,6 @@
                 display: none;
             }   
             #buffer-player { position: absolute; top: -9999px; left: -9999px; visibility: hidden; }         
-
-            .presence {
-                display: flex;
-                flex-wrap: nowrap;
-                align-items: center;
-                gap: 12px;
-                width: 100%;
-                max-width: 100%;
-            }
-            
-            .presence .usernamecontainer {
-                flex: 1;
-                min-width: 0;
-                max-width: 280px;
-            }
-            
-            .presence .usernamecontainer h3 {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                margin: 0;
-                white-space: nowrap;
-                overflow-x: auto;
-                overflow-y: hidden;
-                scrollbar-width: thin;
-                max-width: 100%;
-            }
-            
-            .guild-tag {
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
-            
-            .presence .activity {
-                cursor: pointer;
-                display: inline-block;
-                max-width: 100%;
-                overflow: hidden;
-                white-space: nowrap;
-                text-overflow: ellipsis;
-            }                
         </style>
         <link rel="preload" href="bg.jpg" as="image">     
         <script src="rainyday.js"></script>   
@@ -144,7 +103,7 @@
                 --containerColor: rgba(255, 255, 255, 0.13);
                 --containerBlur: 3px;
                 --containerRadius: 20px;
-                --containerWidth: 40rem;
+                --containerWidth: 55rem;
                 --containerPadding: 35px 15px;
                 --volumeBackgroundcolor: rgba(255, 255, 255, 0.13);
                 --volumeBorder: 2px solid rgba(255, 255, 255, 0.117);
@@ -458,12 +417,10 @@
                         : ''}
                     </h3>
                     ${data.activities && data.activities.length > 0 
-                    ? `<h4 class="activity" data-fulltext="${(data.activities[0]?.emoji ? (data.activities[0].emoji.id ? ':' + data.activities[0].emoji.name + ':' : data.activities[0].emoji.name) : '') + ' ' + (data.activities[0].state || '').replace(/"/g, '&quot;')}">${data.activities[0]?.emoji ? (data.activities[0].emoji.id ? `<img src="https://cdn.discordapp.com/emojis/${data.activities[0].emoji.id}.webp?size=22" style="width:18px;height:18px;vertical-align:middle;">` : data.activities[0].emoji.name) : ''} ${data.activities[0].state || ''}</h4>`
+                    ? `<h4 class="activity">${data.activities[0]?.emoji ? (data.activities[0].emoji.id ? `<img src="https://cdn.discordapp.com/emojis/${data.activities[0].emoji.id}.webp?size=22" style="width:18px;height:18px;vertical-align:middle;">` : data.activities[0].emoji.name) : ''} ${data.activities[0].state}</h4>`
                     : ''} 
                 </div>
                 `;
-                addActivityTooltip();
-                
                 const vid = presence.querySelector(".nameplate-video");
                 if (vid) {
                     vid.pause(); 
@@ -473,51 +430,6 @@
                 }
             }
 
-            function addActivityTooltip() {
-                const activityElem = document.querySelector('.presence .activity');
-                if (!activityElem) return;
-                
-                const fullText = activityElem.getAttribute('data-fulltext') || activityElem.textContent;
-                if (!fullText) return;
-                
-                activityElem.removeEventListener('mouseenter', showTooltip);
-                activityElem.removeEventListener('mouseleave', hideTooltip);
-                
-                let tooltipDiv = null;
-                
-                function showTooltip(e) {
-                    tooltipDiv = document.createElement('div');
-                    tooltipDiv.className = 'custom-tooltip';
-                    tooltipDiv.textContent = fullText;
-                    document.body.appendChild(tooltipDiv);
-                    
-                    const rect = activityElem.getBoundingClientRect();
-                    tooltipDiv.style.position = 'fixed';
-                    tooltipDiv.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
-                    tooltipDiv.style.left = rect.left + 'px';
-                    tooltipDiv.style.backgroundColor = 'rgba(0,0,0,0.9)';
-                    tooltipDiv.style.color = 'white';
-                    tooltipDiv.style.padding = '6px 10px';
-                    tooltipDiv.style.borderRadius = '8px';
-                    tooltipDiv.style.fontSize = '12px';
-                    tooltipDiv.style.maxWidth = '280px';
-                    tooltipDiv.style.whiteSpace = 'normal';
-                    tooltipDiv.style.wordBreak = 'break-word';
-                    tooltipDiv.style.zIndex = '1000';
-                    tooltipDiv.style.backdropFilter = 'blur(4px)';
-                    tooltipDiv.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-                    tooltipDiv.style.pointerEvents = 'none';
-                }
-                
-                function hideTooltip() {
-                    if (tooltipDiv) tooltipDiv.remove();
-                    tooltipDiv = null;
-                }
-                
-                activityElem.addEventListener('mouseenter', showTooltip);
-                activityElem.addEventListener('mouseleave', hideTooltip);
-            }
-            
             window.addEventListener("DOMContentLoaded", async () => {
                 await updateDiscord();
                 setInterval(updateDiscord, 15000);
