@@ -48,9 +48,12 @@
 
             .presence {
                 display: flex;
-                flex-wrap: wrap;
+                flex-wrap: nowrap;
                 align-items: center;
                 gap: 12px;
+                width: 100%;
+                max-width: 100%;
+                overflow-x: auto;
             }
             
             .presence .usernamecontainer {
@@ -60,11 +63,13 @@
             
             .presence .usernamecontainer h3 {
                 display: flex;
-                flex-wrap: wrap;
                 align-items: center;
                 gap: 6px;
                 margin: 0;
-                word-break: break-word;
+                white-space: nowrap;
+                overflow-x: auto;
+                overflow-y: hidden;
+                scrollbar-width: thin;
             }
             
             .guild-tag {
@@ -72,13 +77,38 @@
             }
             
             .presence .activity {
+                position: relative;
+                cursor: help;
+                display: inline-block;
+                max-width: 100%;
                 overflow: hidden;
                 white-space: nowrap;
                 text-overflow: ellipsis;
-                max-width: 100%;
-                display: inline-block;
-                margin: 4px 0 0 0;
-                cursor: help;
+            }
+            
+            .presence .activity::after {
+                content: attr(data-fulltext);
+                position: absolute;
+                bottom: 100%;
+                left: 0;
+                background: rgba(0,0,0,0.85);
+                color: white;
+                padding: 6px 10px;
+                border-radius: 8px;
+                font-size: 12px;
+                white-space: normal;
+                word-break: break-word;
+                max-width: 280px;
+                z-index: 100;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.2s;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                backdrop-filter: blur(4px);
+            }
+            
+            .presence .activity:hover::after {
+                opacity: 1;
             }
             
         </style>
@@ -453,15 +483,10 @@
                         : ''}
                     </h3>
                     ${data.activities && data.activities.length > 0 
-                    ? `<h4 class="activity">${data.activities[0]?.emoji ? (data.activities[0].emoji.id ? `<img src="https://cdn.discordapp.com/emojis/${data.activities[0].emoji.id}.webp?size=22" style="width:18px;height:18px;vertical-align:middle;">` : data.activities[0].emoji.name) : ''} ${data.activities[0].state}</h4>`
+                    ? `<h4 class="activity" data-fulltext="${(data.activities[0]?.emoji ? (data.activities[0].emoji.id ? ':' + data.activities[0].emoji.name + ':' : data.activities[0].emoji.name) : '') + ' ' + (data.activities[0].state || '').replace(/"/g, '&quot;')}">${data.activities[0]?.emoji ? (data.activities[0].emoji.id ? `<img src="https://cdn.discordapp.com/emojis/${data.activities[0].emoji.id}.webp?size=22" style="width:18px;height:18px;vertical-align:middle;">` : data.activities[0].emoji.name) : ''} ${data.activities[0].state || ''}</h4>`
                     : ''} 
                 </div>
                 `;
-
-                const activityEl = presence.querySelector('.activity');
-                if (activityEl) {
-                    activityEl.setAttribute('title', activityEl.textContent.trim());
-                }
                 
                 const vid = presence.querySelector(".nameplate-video");
                 if (vid) {
