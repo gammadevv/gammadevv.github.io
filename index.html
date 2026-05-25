@@ -45,6 +45,42 @@
                 display: none;
             }   
             #buffer-player { position: absolute; top: -9999px; left: -9999px; visibility: hidden; }         
+
+            .presence {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .presence .usernamecontainer {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .presence .usernamecontainer h3 {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 6px;
+                margin: 0;
+                word-break: break-word;
+            }
+            
+            .guild-tag {
+                white-space: nowrap;
+            }
+            
+            .presence .activity {
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                max-width: 100%;
+                display: inline-block;
+                margin: 4px 0 0 0;
+                cursor: help;
+            }
+            
         </style>
         <link rel="preload" href="bg.jpg" as="image">     
         <script src="rainyday.js"></script>   
@@ -419,6 +455,10 @@
                     ${data.activities && data.activities.length > 0 
                     ? `<h4 class="activity">${data.activities[0]?.emoji ? (data.activities[0].emoji.id ? `<img src="https://cdn.discordapp.com/emojis/${data.activities[0].emoji.id}.webp?size=22" style="width:18px;height:18px;vertical-align:middle;">` : data.activities[0].emoji.name) : ''} ${data.activities[0].state}</h4>`
                     : ''} 
+                    const activityEl = presence.querySelector('.activity');
+                    if (activityEl) {
+                        activityEl.setAttribute('title', activityEl.textContent.trim());
+                    }
                 </div>
                 `;
                 const vid = presence.querySelector(".nameplate-video");
