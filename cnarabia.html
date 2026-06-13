@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Cartoon Network Arabic - Live</title>
+    <title>Cartoon Network Arabic - Live Stream</title>
     <style>
         * {
             margin: 0;
@@ -16,7 +16,7 @@
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
             padding: 2rem 1rem;
         }
-        .player-card {
+        .player-container {
             max-width: 1100px;
             margin: 0 auto;
             background: #10141c;
@@ -35,7 +35,7 @@
             height: 100%;
             display: block;
         }
-        .info-bar {
+        .info-section {
             padding: 1rem 1.5rem 1.5rem;
         }
         h1 {
@@ -47,7 +47,7 @@
             padding-left: 1rem;
             margin-bottom: 0.5rem;
         }
-        .status {
+        .status-badge {
             font-family: 'SF Mono', 'Fira Code', monospace;
             font-size: 0.8rem;
             background: #1a1f2a;
@@ -55,8 +55,9 @@
             border-radius: 2rem;
             display: inline-block;
             margin: 0.6rem 0 0.8rem;
+            border-left: 3px solid #f0a500;
         }
-        .message {
+        .info-text {
             font-size: 0.85rem;
             color: #bcc9e6;
             background: #0b0f16;
@@ -64,31 +65,18 @@
             border-radius: 1rem;
             margin-top: 0.5rem;
         }
-        .error-message {
-            border-left: 3px solid #ff7b4a;
-        }
-        hr {
-            margin: 1rem 0;
-            border: none;
-            height: 1px;
-            background: #252e3b;
-        }
-        a {
-            color: #f0b042;
-            text-decoration: none;
-        }
     </style>
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.10/plyr.css" />
 </head>
 <body>
-<div class="player-card">
+<div class="player-container">
     <div class="video-wrapper">
         <video id="cnVideo" playsinline crossorigin="anonymous"></video>
     </div>
-    <div class="info-bar">
+    <div class="info-section">
         <h1>Cartoon Network Arabic</h1>
-        <div id="statusText" class="status">initializing stream</div>
-        <div id="infoMessage" class="message"></div>
+        <div id="statusText" class="status-badge">connecting to proxy stream</div>
+        <div id="infoMessage" class="info-text">Loading stream via backend proxy (no additional headers required).</div>
     </div>
 </div>
 
@@ -99,9 +87,9 @@
         const video = document.getElementById('cnVideo');
         const statusDiv = document.getElementById('statusText');
         const msgDiv = document.getElementById('infoMessage');
-        const STREAM_URL = 'https://www.go-web.space/hls/strr_car/stream.m3u8';
+        const PROXY_STREAM_URL = 'http://gamma.c00l.site:3745/stream.m3u8';
 
-        let plyr = null;
+        let plyrInstance = null;
 
         function updateStatus(text, isError = false) {
             statusDiv.innerText = text;
@@ -117,15 +105,17 @@
         function setMessage(msg, isError = false) {
             msgDiv.innerText = msg;
             if (isError) {
-                msgDiv.classList.add('error-message');
+                msgDiv.style.background = '#2a1b16';
+                msgDiv.style.borderLeft = '3px solid #ff7b4a';
             } else {
-                msgDiv.classList.remove('error-message');
+                msgDiv.style.background = '#0b0f16';
+                msgDiv.style.borderLeft = 'none';
             }
         }
 
         function initPlyr() {
-            if (plyr) plyr.destroy();
-            plyr = new Plyr(video, {
+            if (plyrInstance) plyrInstance.destroy();
+            plyrInstance = new Plyr(video, {
                 controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
                 autoplay: true,
                 muted: false,
@@ -133,67 +123,45 @@
             });
         }
 
-        function attemptPlayback() {
-            if (!Hls.isSupported()) {
-                updateStatus('not supported', true);
-                setMessage('Your browser does not support HLS playback. Use a modern browser (Chrome, Edge, Firefox).', true);
-                return;
-            }
-
-            const hls = new Hls({
-                enableWorker: true,
-                xhrSetup: function(xhr, url) {
-                    try {
-                        xhr.setRequestHeader('accept', '*/*');
-                        xhr.setRequestHeader('accept-language', 'en-GB,en-US;q=0.9,en;q=0.8');
-                        xhr.setRequestHeader('priority', 'u=1, i');
-                        xhr.setRequestHeader('sec-ch-ua', '"Chromium";v="148", "Google Chrome";v="148", "Not/A)Brand";v="99"');
-                        xhr.setRequestHeader('sec-ch-ua-mobile', '?0');
-                        xhr.setRequestHeader('sec-ch-ua-platform', '"Linux"');
-                        xhr.setRequestHeader('sec-fetch-dest', 'empty');
-                        xhr.setRequestHeader('sec-fetch-mode', 'cors');
-                        xhr.setRequestHeader('sec-fetch-site', 'cross-site');
-                        xhr.setRequestHeader('user-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36');
-                    } catch(e) {
-                        console.warn('header restriction', e);
-                    }
-                    try {
-                        xhr.setRequestHeader('origin', 'https://www.web24iptv.online');
-                    } catch(e) {}
-                }
-            });
-
-            hls.loadSource(STREAM_URL);
-            hls.attachMedia(video);
-
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                updateStatus('live - playing');
-                setMessage('Stream active. Custom headers (User-Agent, Accept-Language) were sent. If video does not start, click play.');
-                initPlyr();
-                video.play().catch(e => {
-                    setMessage('Playback requires user interaction. Use the play button.');
+        function startPlayback() {
+            if (Hls.isSupported()) {
+                const hls = new Hls({
+                    enableWorker: true,
+                    debug: false
                 });
-            });
+                hls.loadSource(PROXY_STREAM_URL);
+                hls.attachMedia(video);
 
-            hls.on(Hls.Events.ERROR, (event, data) => {
-                if (data.fatal) {
-                    console.error('HLS fatal', data);
-                    let errorDesc = '';
-                    if (data.response && data.response.code === 403) errorDesc = 'Access forbidden (403). The server demands headers that browsers cannot override (Origin, sec-fetch-*).';
-                    else if (data.response && data.response.code === 401) errorDesc = 'Unauthorized - missing required authentication.';
-                    else if (data.type === Hls.ErrorTypes.NETWORK_ERROR) errorDesc = 'Network error - stream unreachable.';
-                    else errorDesc = 'Stream could not be loaded due to DRM or header restrictions.';
-                    updateStatus('failed', true);
-                    setMessage(errorDesc + ' No external command is displayed; this is a browser limitation.', true);
-                    hls.destroy();
-                } else if (data.type === Hls.ErrorTypes.KEY_SYSTEM_ERROR) {
-                    updateStatus('DRM error', true);
-                    setMessage('ClearKey decryption failed. The stream requires key setup that could not be completed.', true);
-                }
-            });
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    updateStatus('live - playing');
+                    setMessage('Stream is running via proxy. If video does not start, click the play button.');
+                    initPlyr();
+                    video.play().catch(e => {
+                        setMessage('Autoplay prevented. Press play button to start.');
+                    });
+                });
+
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    if (data.fatal) {
+                        console.error('HLS error', data);
+                        updateStatus('playback failed', true);
+                        setMessage('Could not load stream. The proxy may be unreachable or the stream is offline.', true);
+                        hls.destroy();
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = PROXY_STREAM_URL;
+                updateStatus('native HLS');
+                setMessage('Using native HLS playback.');
+                initPlyr();
+                video.play().catch(e => setMessage('Click play to start.'));
+            } else {
+                updateStatus('not supported', true);
+                setMessage('Your browser does not support HLS streaming. Please use a modern browser (Chrome, Edge, Firefox, Safari).', true);
+            }
         }
 
-        attemptPlayback();
+        startPlayback();
     })();
 </script>
 </body>
